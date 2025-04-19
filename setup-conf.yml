@@ -1,0 +1,150 @@
+---
+- name: Install Jenkins, Docker, AWS CLI, eksctl, kubectl and set permissions
+  hosts: localhost
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    # Java and Jenkins setup
+    - name: Install prerequisites
+      apt:
+        name:
+          - openjdk-17-jdk
+          - wget
+          - gnupg
+          - ca-certificates
+          - curl
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Add Jenkins GPG key securely
+      shell: |
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | gpg --dearmor -o /etc/apt/keyrings/jenkins.gpg
+        chmod a+r /etc/apt/keyrings/jenkins.gpg
+
+    - name: Add Jenkins repository using signed-by
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/jenkins.gpg] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Start and enable Jenkins service
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    # Docker installation
+    - name: Add Docker GPG key
+      shell: |
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Update apt cache after Docker repo
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure docker service is running and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Add jenkins user to docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Set docker socket permissions for ubuntu
+      file:
+        path: /var/run/docker.sock
+        owner: ubuntu
+        group: docker
+        mode: '0660'
+
+    - name: Install unzip (required for AWS CLI ZIP extraction)
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+
+    # AWS CLI, kubectl, eksctl installation
+    - name: Install AWS CLI v2 from ZIP
+      shell: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -o awscliv2.zip
+        ./aws/install
+      args:
+        creates: /usr/local/bin/aws
+
+    - name: Clean up AWS CLI installation files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - awscliv2.zip
+        - aws
+
+    - name: Install kubectl
+      shell: |
+        curl -LO https://dl.k8s.io/release/v1.26.0/bin/linux/amd64/kubectl
+        chmod +x ./kubectl
+        mv ./kubectl /usr/local/bin/kubectl
+      args:
+        creates: /usr/local/bin/kubectl
+
+    - name: Download and install eksctl
+      shell: |
+        curl --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" -o /tmp/eksctl.tar.gz
+        tar -xzf /tmp/eksctl.tar.gz -C /tmp/
+        install -m 0755 /tmp/eksctl /usr/local/bin/eksctl
+      args:
+        creates: /usr/local/bin/eksctl
+
+    - name: Verify eksctl Installation
+      command: eksctl version
+
+    # Verification tasks (optional)
+    - name: Verify AWS CLI Installation
+      command: aws --version
+
+    - name: Verify kubectl Installation
+      command: kubectl version --client
+
+    - name: Verify eksctl Installation
+      command: eksctl version
