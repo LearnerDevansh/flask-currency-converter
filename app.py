@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request
+from flask_wtf.csrf import CSRFProtect
+import os
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")  # use env var in prod
+csrf = CSRFProtect(app)
 
 conversion_rates = {
     "USD": {"INR": 83.0, "EUR": 0.93, "GBP": 0.80, "JPY": 151.5, "CAD": 1.36},
@@ -14,7 +18,6 @@ conversion_rates = {
 @app.route("/", methods=["GET", "POST"])
 def index():
     result = error = None
-
     if request.method == "POST":
         try:
             amount = float(request.form["amount"])
@@ -22,25 +25,16 @@ def index():
             to_currency = request.form["to_currency"]
 
             if from_currency == to_currency:
-                converted_amount = amount
-            elif from_currency in conversion_rates and to_currency in conversion_rates[from_currency]:
-                rate = conversion_rates[from_currency][to_currency]
-                converted_amount = amount * rate
+                result = f"{amount:.2f} {from_currency} equals {amount:.2f} {to_currency}"
             else:
-                error = "Invalid conversion selection"
-                return render_template("index.html", error=error)
-
-            result = {
-                "amount": amount,
-                "from": from_currency,
-                "to": to_currency,
-                "converted_amount": round(converted_amount, 2)
-            }
-
+                rate = conversion_rates[from_currency][to_currency]
+                converted = amount * rate
+                result = f"{amount:.2f} {from_currency} equals {converted:.2f} {to_currency}"
         except Exception as e:
-            error = "Invalid input. Please enter a valid number."
+            error = f"Conversion error: {str(e)}"
 
     return render_template("index.html", result=result, error=error)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=5000, debug=debug_mode)
