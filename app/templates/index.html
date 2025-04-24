@@ -46,6 +46,8 @@
   <div class="container">
     <h2>Currency Converter</h2>
     <form method="POST">
+      {{ csrf_token() }} <!-- CSRF token here -->
+      
       <input type="number" name="amount" placeholder="Enter amount" required step="any">
       <select name="from_currency">       
         <option value="USD">USD</option>
