@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 from flask_wtf.csrf import CSRFProtect
+from forms import CurrencyForm
 import os
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")  # use env var in prod
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")  # Use environment variable in production
 csrf = CSRFProtect(app)
 
 conversion_rates = {
@@ -17,12 +18,14 @@ conversion_rates = {
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    form = CurrencyForm()
     result = error = None
-    if request.method == "POST":
+
+    if form.validate_on_submit():
         try:
-            amount = float(request.form["amount"])
-            from_currency = request.form["from_currency"]
-            to_currency = request.form["to_currency"]
+            amount = form.amount.data
+            from_currency = form.from_currency.data
+            to_currency = form.to_currency.data
 
             if from_currency == to_currency:
                 result = f"{amount:.2f} {from_currency} equals {amount:.2f} {to_currency}"
@@ -33,7 +36,7 @@ def index():
         except Exception as e:
             error = f"Conversion error: {str(e)}"
 
-    return render_template("index.html", result=result, error=error)
+    return render_template("index.html", form=form, result=result, error=error)
 
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
