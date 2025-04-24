@@ -49,4 +49,17 @@
     <form method="POST">
       {{ form.hidden_tag() }}
 
-      <p
+      <p>{{ form.amount.label }}<br>{{ form.amount(class_="form-control") }}</p>
+      <p>{{ form.from_currency.label }}<br>{{ form.from_currency(class_="form-control") }}</p>
+      <p>{{ form.to_currency.label }}<br>{{ form.to_currency(class_="form-control") }}</p>
+      <p>{{ form.submit(class_="form-control") }}</p>
+    </form>
+
+    {% if result %}
+      <div class="result">{{ result }}</div>
+    {% elif error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+  </div>
+</body>
+</html>
