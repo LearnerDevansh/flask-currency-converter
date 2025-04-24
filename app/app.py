@@ -1,10 +1,11 @@
 from flask import Flask, render_template
 from flask_wtf.csrf import CSRFProtect
 from forms import CurrencyForm
+from decimal import Decimal  # Import Decimal
 import os
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")  # Use environment variable in production
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")
 csrf = CSRFProtect(app)
 
 conversion_rates = {
@@ -23,14 +24,15 @@ def index():
 
     if form.validate_on_submit():
         try:
-            amount = form.amount.data
+            # Convert form input to Decimal
+            amount = Decimal(str(form.amount.data))  # ensures proper conversion
             from_currency = form.from_currency.data
             to_currency = form.to_currency.data
 
             if from_currency == to_currency:
                 result = f"{amount:.2f} {from_currency} equals {amount:.2f} {to_currency}"
             else:
-                rate = conversion_rates[from_currency][to_currency]
+                rate = Decimal(str(conversion_rates[from_currency][to_currency]))  # Convert rate to Decimal
                 converted = amount * rate
                 result = f"{amount:.2f} {from_currency} equals {converted:.2f} {to_currency}"
         except Exception as e:
