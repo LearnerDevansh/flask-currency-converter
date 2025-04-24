@@ -6,14 +6,14 @@
   <style>
     body {
       margin: 0;
-      background-color: #af5353;  /* Updated */
+      background-color: #af5353;
       font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
-  
+
     .container {
       background-color: white;
       padding: 2rem;
@@ -22,7 +22,7 @@
       width: 300px;
       text-align: center;
     }
-  
+
     input, select, button {
       margin: 0.5rem 0;
       padding: 0.5rem;
@@ -30,13 +30,13 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-  
+
     .result, .error {
       margin-top: 1rem;
       font-weight: bold;
       color: #333;
     }
-  
+
     .error {
       color: red;
     }
@@ -45,35 +45,8 @@
 <body>
   <div class="container">
     <h2>Currency Converter</h2>
-    <form method="POST">
-      {{ csrf_token() }}  <!-- CSRF token here -->      
-      <input type="number" name="amount" placeholder="Enter amount" required step="any">
-      <select name="from_currency">       
-        <option value="USD">USD</option>
-        <option value="INR">INR</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-        <option value="JPY">JPY</option>
-        <option value="CAD">CAD</option>
-      </select>
-      <select name="to_currency">
-        <option value="INR">INR</option>
-        <option value="USD">USD</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-        <option value="JPY">JPY</option>
-        <option value="CAD">CAD</option>
-      </select>
-      <button type="submit">Convert</button>
-    </form>
 
-    {% if result %}
-    <div class="result">
-      {{ result.amount }} {{ result.from }} = {{ result.converted_amount }} {{ result.to }}
-    </div>
-    {% elif error %}
-    <div class="error">{{ error }}</div>
-    {% endif %}
-  </div>
-</body>
-</html>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+      <p
